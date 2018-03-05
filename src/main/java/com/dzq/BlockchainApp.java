@@ -1,8 +1,12 @@
 package com.dzq;
 
 import com.dzq.chainblock.Block;
+import com.dzq.coin.Wallet;
+import com.dzq.transaction.Transaction;
 import com.dzq.utils.DigitalSignatureUtil;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import java.security.Security;
 import java.util.ArrayList;
 
 /**
@@ -19,7 +23,23 @@ public class BlockchainApp {
     public static int difficulty = 6; //设置挖矿难度，值越大越难 1-64
 
 
+    public static Wallet walletA;
+    public static Wallet walletB;
+
     public static void main(String[] args) {
+//        POW();
+        TRANS();
+    }
+
+    public static void addBlock(Block newBlock) {
+        newBlock.mineBlock(difficulty);
+        blockchain.add(newBlock);
+    }
+
+    /**
+     * 模拟矿工算力挖矿：工作量证明
+     */
+    public static void POW(){
         System.out.println("正在尝试挖掘block 1... ");
         addBlock(new Block("Hi im the first block", "0"));
 
@@ -36,8 +56,23 @@ public class BlockchainApp {
         System.out.println(blockchainJson);
     }
 
-    public static void addBlock(Block newBlock) {
-        newBlock.mineBlock(difficulty);
-        blockchain.add(newBlock);
+    /**
+     * 模拟区块链网络交易部分之交易签名验证
+     */
+    public static void TRANS(){
+        //使用了boncey castle来作为安全实现的提供者
+        Security.addProvider(new BouncyCastleProvider());
+        //创建钱包
+        walletA = new Wallet();
+        walletB = new Wallet();
+        //Test public and private keys
+        System.out.println("Private and public keys:");
+        System.out.println("Private："+DigitalSignatureUtil.getStringFromKey(walletA.privateKey));
+        System.out.println("Public："+DigitalSignatureUtil.getStringFromKey(walletA.publicKey));
+        //创建一笔交易 A钱包 -> B 亲宝
+        Transaction transaction = new Transaction(walletA.publicKey, walletB.publicKey, 5, null);
+        transaction.generateSignature(walletA.privateKey);
+        //
+        System.out.println("验证签名是否合法："+transaction.verifySignature());
     }
 }
