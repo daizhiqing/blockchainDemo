@@ -7,6 +7,8 @@ import java.security.spec.ECGenParameterSpec;
  * @Project : blockchainDemo
  * @Package Name : com.dzq.coin
  * @Description : TODO 钱包 使用Elliptic-curve加密来生成KeyPair
+ * 区块链钱包不会有余额总数在数值在钱包中，
+ * 钱包余额其实是所有发送给你的未使用的交易输出的总和。ps：这里略微有点绕，总之就记住进账和出账这回事情。余额=总进账-总出账
  * @Author : daizhiqing@xiaochong.com
  * @Creation Date : 2018年03月05日下午6:13
  * @ModificationHistory Who When What
