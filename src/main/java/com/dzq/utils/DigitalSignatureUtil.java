@@ -1,9 +1,11 @@
-package com.dzq.chainblock;
+package com.dzq.utils;
 
+import com.dzq.chainblock.Block;
 import com.google.gson.GsonBuilder;
 
-import java.security.MessageDigest;
+import java.security.*;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -93,4 +95,54 @@ public class DigitalSignatureUtil {
         }
         return true;
     }
+
+    /**
+     * 获取Key -> String
+     * @param key
+     * @return
+     */
+    public static String getStringFromKey(Key key) {
+        return Base64.getEncoder().encodeToString(key.getEncoded());
+    }
+
+    /**
+     * 根据私钥和数据 生成唯一的数字签名
+     * @param privateKey 私钥
+     * @param input 输入数据
+     * @return
+     */
+    public static byte[] applyECDSASig(PrivateKey privateKey, String input) {
+        Signature dsa;
+        byte[] output = new byte[0];
+        try {
+            dsa = Signature.getInstance("ECDSA", "BC");
+            dsa.initSign(privateKey);
+            byte[] strByte = input.getBytes();
+            dsa.update(strByte);
+            byte[] realSig = dsa.sign();
+            output = realSig;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return output;
+    }
+
+    /**
+     * 通过公钥来验证数据签名是否合法
+     * @param publicKey 公钥
+     * @param data  数据
+     * @param signature 签名
+     * @return
+     */
+    public static boolean verifyECDSASig(PublicKey publicKey, String data, byte[] signature) {
+        try {
+            Signature ecdsaVerify = Signature.getInstance("ECDSA", "BC");
+            ecdsaVerify.initVerify(publicKey);
+            ecdsaVerify.update(data.getBytes());
+            return ecdsaVerify.verify(signature);
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

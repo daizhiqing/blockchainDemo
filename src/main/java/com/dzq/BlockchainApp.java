@@ -1,4 +1,7 @@
-package com.dzq.chainblock;
+package com.dzq;
+
+import com.dzq.chainblock.Block;
+import com.dzq.utils.DigitalSignatureUtil;
 
 import java.util.ArrayList;
 
