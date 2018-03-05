@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 /**
  * @Project : blockchainDemo
- * @Package Name : com.dzq.coin
+ * @Package Name : com.dzq.transaction
  * @Description : TODO 每笔交易将会携带如下数据：
     1、资金发送方的公钥（地址）。
     2、资金接收方的公钥（地址）。
@@ -44,6 +44,7 @@ public class Transaction {
         this.timeStamp = System.currentTimeMillis();
 
         transactionId = calulateHash();
+
     }
 
     /**
@@ -74,7 +75,8 @@ public class Transaction {
 
     /**
      * 签署一些基本信息的签名，真正的区块链应用肯定不止这些，
-     * 比如使用的输出（outputs）/输入（inputs）或时间戳（time-stamp）（现在我们只签署了最基本的）。
+     * 比如使用的输出（outputs）/输入（inputs）现在我们只签署了最基本的。
+     * 将新的交易添加到块中时，矿工将对签名进行验证。
      * @return
      */
     public boolean verifySignature() {
