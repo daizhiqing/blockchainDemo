@@ -1,7 +1,15 @@
 package com.dzq.coin;
 
+import com.dzq.BlockchainApp;
+import com.dzq.transaction.Transaction;
+import com.dzq.transaction.TransactionInput;
+import com.dzq.transaction.TransactionOutput;
+
 import java.security.*;
 import java.security.spec.ECGenParameterSpec;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @Project : blockchainDemo
@@ -18,6 +26,9 @@ public class Wallet {
     public PrivateKey privateKey; //私钥
 
     public PublicKey publicKey;   //公钥
+
+    public HashMap<String,TransactionOutput> UTXOs = new HashMap<String,TransactionOutput>();
+
 
     public Wallet() {
         generateKeyPair();
@@ -41,5 +52,52 @@ public class Wallet {
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * 计算余额
+     * @return
+     */
+    public float getBalance() {
+        float total = 0;
+        for (Map.Entry<String, TransactionOutput> item: BlockchainApp.UTXOs.entrySet()){
+            TransactionOutput UTXO = item.getValue();
+            if(UTXO.isMine(publicKey)) { //if output belongs to me ( if coins belong to me )
+                UTXOs.put(UTXO.id,UTXO); //add it to our list of unspent transactions.
+                total += UTXO.value ;
+            }
+        }
+        return total;
+    }
+
+    /**
+     * 发起一笔资金转移
+     * @param _recipient
+     * @param value
+     * @return
+     */
+    public Transaction sendFunds(PublicKey _recipient, float value ) {
+        if(getBalance() < value) {
+            System.out.println("当前月不足，无法发起此笔交易");
+            return null;
+        }
+        ArrayList<TransactionInput> inputs = new ArrayList<TransactionInput>();
+
+        float total = 0;
+        for (Map.Entry<String, TransactionOutput> item: UTXOs.entrySet()){
+            TransactionOutput UTXO = item.getValue();
+            total += UTXO.value;
+            inputs.add(new TransactionInput(UTXO.id));
+            if(total > value) break;
+        }
+
+        Transaction newTransaction = new Transaction(publicKey, _recipient , value, inputs);
+        newTransaction.generateSignature(privateKey);
+
+        for(TransactionInput input: inputs){
+            UTXOs.remove(input.transactionOutputId);
+        }
+
+        return newTransaction;
     }
 }

@@ -3,11 +3,13 @@ package com.dzq;
 import com.dzq.chainblock.Block;
 import com.dzq.coin.Wallet;
 import com.dzq.transaction.Transaction;
+import com.dzq.transaction.TransactionOutput;
 import com.dzq.utils.DigitalSignatureUtil;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.security.Security;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * @Project : blockchainDemo
@@ -21,6 +23,12 @@ public class BlockchainApp {
     //把区块装入数字中组成区块链
     public static ArrayList<Block> blockchain = new ArrayList<Block>();
     public static int difficulty = 6; //设置挖矿难度，值越大越难 1-64
+
+    /**
+     * 来保存所有未使用的可被作为输入（inputs）的交易
+     */
+    public static HashMap<String,TransactionOutput> UTXOs = new HashMap<String,TransactionOutput>();
+
 
 
     public static Wallet walletA;
