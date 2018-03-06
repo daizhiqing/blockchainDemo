@@ -1,12 +1,17 @@
 package com.dzq.utils;
 
 import com.dzq.chainblock.Block;
+import com.dzq.transaction.Transaction;
+import com.dzq.transaction.TransactionInput;
+import com.dzq.transaction.TransactionOutput;
 import com.google.gson.GsonBuilder;
 
 import java.security.*;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+
 
 /**
  * @Project : blockchainDemo
@@ -67,32 +72,82 @@ public class DigitalSignatureUtil {
      * @param difficulty
      * @return
      */
-    public static Boolean isChainValid(List<Block> blockchain , int difficulty) {
+    public static Boolean isChainValid(List<Block> blockchain , Transaction genesisTransaction, int difficulty) {
         Block currentBlock;
         Block previousBlock;
-        String hashTarget = getDifficultyString(difficulty);
+        String hashTarget = DigitalSignatureUtil.getDifficultyString(difficulty);
+        //a temporary working list of unspent transactions at a given block state.
+        HashMap<String,TransactionOutput> tempUTXOs = new HashMap<String,TransactionOutput>();
+        tempUTXOs.put(genesisTransaction.outputs.get(0).id, genesisTransaction.outputs.get(0));
 
-        //循环遍历每个块检查hash
+        //loop through blockchain to check hashes:
         for(int i=1; i < blockchain.size(); i++) {
+
             currentBlock = blockchain.get(i);
             previousBlock = blockchain.get(i-1);
-            //比较注册的hash和计算的hash:
+            //compare registered hash and calculated hash:
             if(!currentBlock.hash.equals(currentBlock.calculateHash()) ){
-                System.out.println("Current Hashes not equal");
+                System.out.println("#当前hash不正确");
                 return false;
             }
-            //比较上一个块的hash和注册的上一个hash（也就是previousHash）
+            //compare previous hash and registered previous hash
             if(!previousBlock.hash.equals(currentBlock.previousHash) ) {
-                System.out.println("Previous Hashes not equal");
+                System.out.println("#上一块hash不正确");
                 return false;
             }
-            //检查hash是否被处理
+            //check if hash is solved
             if(!currentBlock.hash.substring( 0, difficulty).equals(hashTarget)) {
-                System.out.println("This block hasn't been mined");
+                System.out.println("#这个区块不属于你");
                 return false;
+            }
+
+            //loop thru blockchains transactions:
+            TransactionOutput tempOutput;
+            for(int t=0; t <currentBlock.transactions.size(); t++) {
+                Transaction currentTransaction = currentBlock.transactions.get(t);
+
+                if(!currentTransaction.verifySignature()) {
+                    System.out.println("#Signature on Transaction(" + t + ") is Invalid");
+                    return false;
+                }
+                if(currentTransaction.getInputsValue() != currentTransaction.getOutputsValue()) {
+                    System.out.println("#Inputs are note equal to outputs on Transaction(" + t + ")");
+                    return false;
+                }
+
+                for(TransactionInput input: currentTransaction.inputs) {
+                    tempOutput = tempUTXOs.get(input.transactionOutputId);
+
+                    if(tempOutput == null) {
+                        System.out.println("#Referenced input on Transaction(" + t + ") is Missing");
+                        return false;
+                    }
+
+                    if(input.UTXO.value != tempOutput.value) {
+                        System.out.println("#Referenced input Transaction(" + t + ") value is Invalid");
+                        return false;
+                    }
+
+                    tempUTXOs.remove(input.transactionOutputId);
+                }
+
+                for(TransactionOutput output: currentTransaction.outputs) {
+                    tempUTXOs.put(output.id, output);
+                }
+
+                if( currentTransaction.outputs.get(0).reciepient != currentTransaction.reciepient) {
+                    System.out.println("#Transaction(" + t + ") output reciepient is not who it should be");
+                    return false;
+                }
+                if( currentTransaction.outputs.get(1).reciepient != currentTransaction.sender) {
+                    System.out.println("#Transaction(" + t + ") output 'change' is not sender.");
+                    return false;
+                }
+
             }
 
         }
+        System.out.println("Blockchain is valid");
         return true;
     }
 
@@ -143,6 +198,34 @@ public class DigitalSignatureUtil {
         }catch(Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Merkle Tree(默克尔树)根
+     * 验证数据的原始性是否被篡改
+     * @param transactions
+     * @return
+     */
+    public static String getMerkleRoot(ArrayList<Transaction> transactions) {
+        int count = transactions.size();
+
+        List<String> previousTreeLayer = new ArrayList<String>();
+        for(Transaction transaction : transactions) {
+            previousTreeLayer.add(transaction.transactionId);
+        }
+        List<String> treeLayer = previousTreeLayer;
+
+        while(count > 1) {
+            treeLayer = new ArrayList<String>();
+            for(int i=1; i < previousTreeLayer.size(); i+=2) {
+                treeLayer.add(applySha256(previousTreeLayer.get(i-1) + previousTreeLayer.get(i)));
+            }
+            count = treeLayer.size();
+            previousTreeLayer = treeLayer;
+        }
+
+        String merkleRoot = (treeLayer.size() == 1) ? treeLayer.get(0) : "";
+        return merkleRoot;
     }
 
 }
