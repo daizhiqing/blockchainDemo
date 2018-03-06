@@ -27,7 +27,7 @@ public class Wallet {
 
     public PublicKey publicKey;   //公钥
 
-    public HashMap<String,TransactionOutput> UTXOs = new HashMap<String,TransactionOutput>();
+    public HashMap<String,TransactionOutput> mineUTXOs = new HashMap<String,TransactionOutput>();
 
 
     public Wallet() {
@@ -63,7 +63,7 @@ public class Wallet {
         for (Map.Entry<String, TransactionOutput> item: BlockchainApp.UTXOs.entrySet()){
             TransactionOutput UTXO = item.getValue();
             if(UTXO.isMine(publicKey)) { //if output belongs to me ( if coins belong to me )
-                UTXOs.put(UTXO.id,UTXO); //add it to our list of unspent transactions.
+                mineUTXOs.put(UTXO.id,UTXO); //add it to our list of unspent transactions.
                 total += UTXO.value ;
             }
         }
@@ -84,7 +84,7 @@ public class Wallet {
         ArrayList<TransactionInput> inputs = new ArrayList<TransactionInput>();
 
         float total = 0;
-        for (Map.Entry<String, TransactionOutput> item: UTXOs.entrySet()){
+        for (Map.Entry<String, TransactionOutput> item: mineUTXOs.entrySet()){
             TransactionOutput UTXO = item.getValue();
             total += UTXO.value;
             inputs.add(new TransactionInput(UTXO.id));
@@ -95,7 +95,7 @@ public class Wallet {
         newTransaction.generateSignature(privateKey);
 
         for(TransactionInput input: inputs){
-            UTXOs.remove(input.transactionOutputId);
+            mineUTXOs.remove(input.transactionOutputId);
         }
 
         return newTransaction;

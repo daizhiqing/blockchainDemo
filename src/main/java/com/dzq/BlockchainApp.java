@@ -88,6 +88,7 @@ public class BlockchainApp {
     }
 
     public static void testMain(){
+        boolean flag = false;
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider()); //Setup Bouncey castle as a Security Provider
 
         walletA = new Wallet();
@@ -110,28 +111,37 @@ public class BlockchainApp {
 
         System.out.println("创建第一个初始区块");
         Block genesis = new Block("0");
-        genesis.addTransaction(genesisTransaction);
+        flag = genesis.addTransaction(genesisTransaction);
+
         addBlock(genesis);
+
 
         //testing
         Block block1 = new Block(genesis.hash);
         System.out.println("\nWalletA 的余额为: " + walletA.getBalance());
         System.out.println("\nWalletA 给 WalletB 转账40个币...");
-        block1.addTransaction(walletA.sendFunds(walletB.publicKey, 40f));
+        flag = block1.addTransaction(walletA.sendFunds(walletB.publicKey, 40f));
+
         addBlock(block1);
+
         System.out.println("\nWalletA 的余额变为: " + walletA.getBalance());
         System.out.println("WalletB的余额变为: " + walletB.getBalance());
 
         Block block2 = new Block(block1.hash);
         System.out.println("\nWalletA 尝试转账1000个币给 Wallet");
-        block2.addTransaction(walletA.sendFunds(walletB.publicKey, 1000f));
+        flag = block2.addTransaction(walletA.sendFunds(walletB.publicKey, 1000f));
+
         addBlock(block2);
+
         System.out.println("\nWalletA 的余额变为: " + walletA.getBalance());
         System.out.println("WalletB 的余额变为: " + walletB.getBalance());
 
         Block block3 = new Block(block2.hash);
         System.out.println("\nWalletB 尝试转账20个币给 WalletA");
-        block3.addTransaction(walletB.sendFunds( walletA.publicKey, 20));
+        flag = block3.addTransaction(walletB.sendFunds( walletA.publicKey, 20));
+
+        addBlock(block3);
+
         System.out.println("\nWalletA's 的余额为: " + walletA.getBalance());
         System.out.println("WalletB's 的余额为: " + walletB.getBalance());
 

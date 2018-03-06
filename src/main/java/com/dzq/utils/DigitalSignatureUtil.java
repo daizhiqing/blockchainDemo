@@ -147,7 +147,7 @@ public class DigitalSignatureUtil {
             }
 
         }
-        System.out.println("Blockchain is valid");
+        System.out.println("整个区块链验证完整性成功");
         return true;
     }
 
