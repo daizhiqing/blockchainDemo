@@ -22,21 +22,24 @@ import java.util.HashMap;
 public class BlockchainApp {
     //把区块装入数字中组成区块链
     public static ArrayList<Block> blockchain = new ArrayList<Block>();
-    public static int difficulty = 6; //设置挖矿难度，值越大越难 1-64
+    public static int difficulty = 5; //设置挖矿难度，值越大越难 1-64
 
     /**
      * 来保存所有未使用的可被作为输入（inputs）的交易
      */
     public static HashMap<String,TransactionOutput> UTXOs = new HashMap<String,TransactionOutput>();
 
+    public static float minimumTransaction = 0.1f;
 
+    public static Transaction genesisTransaction;
 
     public static Wallet walletA;
     public static Wallet walletB;
 
     public static void main(String[] args) {
 //        POW();
-        TRANS();
+//        TRANS();
+        testMain();
     }
 
     public static void addBlock(Block newBlock) {
@@ -47,22 +50,22 @@ public class BlockchainApp {
     /**
      * 模拟矿工算力挖矿：工作量证明
      */
-    public static void POW(){
-        System.out.println("正在尝试挖掘block 1... ");
-        addBlock(new Block("Hi im the first block", "0"));
-
-        System.out.println("正在尝试挖掘block 2... ");
-        addBlock(new Block("Yo im the second block",blockchain.get(blockchain.size()-1).hash));
-
-        System.out.println("正在尝试挖掘block 3... ");
-        addBlock(new Block("Hey im the third block",blockchain.get(blockchain.size()-1).hash));
-
-        System.out.println("\nBlockchain is Valid: " + DigitalSignatureUtil.isChainValid(blockchain , difficulty));
-
-        String blockchainJson = DigitalSignatureUtil.getJson(blockchain);
-        System.out.println("\nThe block chain: ");
-        System.out.println(blockchainJson);
-    }
+//    public static void POW(){
+//        System.out.println("正在尝试挖掘block 1... ");
+//        addBlock(new Block("Hi im the first block", "0"));
+//
+//        System.out.println("正在尝试挖掘block 2... ");
+//        addBlock(new Block("Yo im the second block",blockchain.get(blockchain.size()-1).hash));
+//
+//        System.out.println("正在尝试挖掘block 3... ");
+//        addBlock(new Block("Hey im the third block",blockchain.get(blockchain.size()-1).hash));
+//
+//        System.out.println("\nBlockchain is Valid: " + DigitalSignatureUtil.isChainValid(blockchain , difficulty));
+//
+//        String blockchainJson = DigitalSignatureUtil.getJson(blockchain);
+//        System.out.println("\nThe block chain: ");
+//        System.out.println(blockchainJson);
+//    }
 
     /**
      * 模拟区块链网络交易部分之交易签名验证
@@ -82,5 +85,56 @@ public class BlockchainApp {
         transaction.generateSignature(walletA.privateKey);
         //
         System.out.println("验证签名是否合法："+transaction.verifySignature());
+    }
+
+    public static void testMain(){
+        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider()); //Setup Bouncey castle as a Security Provider
+
+        walletA = new Wallet();
+        walletB = new Wallet();
+        /**
+         * 初始钱包
+         */
+        Wallet coinbase = new Wallet();
+
+        //创建一个创世交易，我们往A钱包中充值100个币
+        genesisTransaction = new Transaction(coinbase.publicKey, walletA.publicKey, 100f, null);
+        //对创世交易进行数字签名
+        genesisTransaction.generateSignature(coinbase.privateKey);
+        //设置交易ID
+        genesisTransaction.transactionId = "0";
+        //手动创建一个交易输出
+        genesisTransaction.outputs.add(new TransactionOutput(genesisTransaction.reciepient, genesisTransaction.value, genesisTransaction.transactionId));
+        //其重要的存储我们的第一次交易在utxos列表
+        UTXOs.put(genesisTransaction.outputs.get(0).id, genesisTransaction.outputs.get(0));
+
+        System.out.println("创建第一个初始区块");
+        Block genesis = new Block("0");
+        genesis.addTransaction(genesisTransaction);
+        addBlock(genesis);
+
+        //testing
+        Block block1 = new Block(genesis.hash);
+        System.out.println("\nWalletA 的余额为: " + walletA.getBalance());
+        System.out.println("\nWalletA 给 WalletB 转账40个币...");
+        block1.addTransaction(walletA.sendFunds(walletB.publicKey, 40f));
+        addBlock(block1);
+        System.out.println("\nWalletA 的余额变为: " + walletA.getBalance());
+        System.out.println("WalletB的余额变为: " + walletB.getBalance());
+
+        Block block2 = new Block(block1.hash);
+        System.out.println("\nWalletA 尝试转账1000个币给 Wallet");
+        block2.addTransaction(walletA.sendFunds(walletB.publicKey, 1000f));
+        addBlock(block2);
+        System.out.println("\nWalletA 的余额变为: " + walletA.getBalance());
+        System.out.println("WalletB 的余额变为: " + walletB.getBalance());
+
+        Block block3 = new Block(block2.hash);
+        System.out.println("\nWalletB 尝试转账20个币给 WalletA");
+        block3.addTransaction(walletB.sendFunds( walletA.publicKey, 20));
+        System.out.println("\nWalletA's 的余额为: " + walletA.getBalance());
+        System.out.println("WalletB's 的余额为: " + walletB.getBalance());
+
+        DigitalSignatureUtil.isChainValid(blockchain ,  genesisTransaction , difficulty);
     }
 }
