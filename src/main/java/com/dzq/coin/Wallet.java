@@ -78,7 +78,7 @@ public class Wallet {
      */
     public Transaction sendFunds(PublicKey _recipient, float value ) {
         if(getBalance() < value) {
-            System.out.println("当前月不足，无法发起此笔交易");
+            System.out.println("当前余额不足，无法发起此笔交易");
             return null;
         }
         ArrayList<TransactionInput> inputs = new ArrayList<TransactionInput>();
